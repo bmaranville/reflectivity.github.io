@@ -1,0 +1,40 @@
+name: Make release
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Create Release    
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set release date
+        id: date
+        run: |
+          echo "RELEASE_DATE=$(date '+%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
+  
+      - name: Create Release
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              const release = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: process.env.RELEASE_DATE,
+                name: `Release ${process.env.RELEASE_DATE}`,
+                body: 'Automated release bot to push zenodo',
+                draft: false,
+                prerelease: false
+              });
+  
+              console.log(`Release created successfully: ${release.data.html_url}`);
+            } catch (error) {
+              core.setFailed(error.message);
+            }
